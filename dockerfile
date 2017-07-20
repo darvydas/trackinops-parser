@@ -34,19 +34,22 @@ echo "root hard     nofile         unlimited" >> /etc/security/limits.conf
 ## PART 3: TrackinOps
 ## ==================
 
-# Download TrackinOps from git source.
-RUN git clone https://github.com/darvydas/trackinops-parser /usr/src/app/trackinops-parser &&\
-cd /usr/src/app/trackinops-parser &&\
-# git checkout tags/v0.1 &&\
-npm install
+# # Download TrackinOps from git source.
+# RUN git clone https://github.com/darvydas/trackinops-parser /usr/src/app/trackinops-parser &&\
+# cd /usr/src/app/trackinops-parser &&\
+# # git checkout tags/v0.1 &&\
+# mkdir -p /usr/src/app/trackinops-parser &&\
+# npm install
 
-# # Build TrackinOps from source locally.
-# COPY . /usr/src/app/trackinops-parser
-# RUN npm install
-# # Create app directory
+# Build TrackinOps from source locally.
+COPY . /usr/src/app/trackinops-parser
 # RUN mkdir -p /usr/src/app/trackinops-parser
 
+# Set up Working Directory
 WORKDIR /usr/src/app/trackinops-parser
+RUN npm install
+
+
 
 ## PART 4: Final setup
 ## ===================
