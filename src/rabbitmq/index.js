@@ -386,6 +386,7 @@ const startParserSubscriptions = function () {
                           .then(function (crawlMatchesAfterRegexCheck) {
                             // evaluate elements on the page
                             const regexMatched = _.compact(crawlMatchesAfterRegexCheck);
+                            console.info(msg.body.url, 'regexMatched', regexMatched);
                             // if regexMatched match is empty just return an empty array
                             if (regexMatched.length === 0) return regexMatched;
 
@@ -400,10 +401,12 @@ const startParserSubscriptions = function () {
                                   return existOnPagee ? cMatch : false
                                 });
 
-                            })).then(function (crawlMatchesFounded) {
+                            })).then(function (crawlMatchesAfterRegexCheck) {
                               // return full array of crawlMatches
                               // if nothing matched for all waitForSelector's, still return empty
-                              return _.compact(crawlMatchesFounded);
+                              let crawlMatchesFounded = _.compact(crawlMatchesAfterRegexCheck);
+                              console.log(msg.body.url, 'crawlMatchesFounded', crawlMatchesFounded);
+                              return crawlMatchesFounded;
 
                             });
 
@@ -499,8 +502,6 @@ const startParserSubscriptions = function () {
     console.error('MongoDB crawlerModel search failed', err);
   });
 }
-
-
 
 function queueProcessParserAndMongoSave(requestMessageBody, result) {
   return new Promise(function (resolve, reject) {

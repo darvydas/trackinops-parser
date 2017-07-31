@@ -27,7 +27,7 @@ const development = {
       name: 'trackinopsConnection',
       username: "trackinops",
       password: "trops", //"trackinops",
-      server: ["127.0.0.1"], //"93.115.26.183",//"rabbitmq", //["rabbitmq"],,
+      server: ["127.0.0.1"], //"rabbitmq", //["rabbitmq"],,
       port: 5672,
       VHost: "%2ftrackinops",
       timeout: 1000,
@@ -59,27 +59,7 @@ const production = {
     db: "trackinops",
     uri: "mongodb://mongod:27017/trackinops",
     options: {
-      useMongoClient: true,
-      // user: "trackinops", // "trackinopsMongo",
-      // pass: "mong0", // "mng0trops",
-      // server: {
-      //   poolSize: 50,
-      //   reconnectTries: 90,
-      //   reconnectInterval: 1000, // ms
-      //   socketOptions: {
-      //     autoReconnect: true,
-      //     noDelay: true,
-      //     keepAlive: 5 * 60 * 1000,
-      //     connectTimeoutMS: 1.5 * 60 * 1000,
-      //     socketTimeoutMS: 3 * 60 * 1000
-      //   }
-      // },
-      // replset: {
-      //   ha: true, // Make sure the high availability checks are on,
-      //   haInterval: 5000, // Run every 5 seconds
-      //   socketOptions: { keepAlive: 300000, connectTimeoutMS: 30000, socketTimeoutMS: 90000 }
-      // },
-      // config: { autoIndex: true } // calls ensureIndex on every index in a DB, slower restart, more reliable indexes
+      useMongoClient: true
     }
   },
   rabbit: {
@@ -106,6 +86,22 @@ const production = {
       cacheSize: 8 * 1024 * 1024 * 1024,
       keyEncoding: 'utf8',
       valueEncoding: 'json'
+    }
+  },
+  nsq: {
+    server: 'nsqd-inDocker',
+    wPort: 4150, // TCP nsqd Write Port, default: 4150
+    rPort: 4161, // HTTP nsqlookupd Read Port, default: 4161
+    nsqdTCPAddresses: [`nsqd-inDocker:4150`],
+    lookupdHTTPAddresses: ['nsqlookupd:4161'],
+    readerOptions: {
+      maxInFlight: 5,
+      maxBackoffDuration: 128,
+      maxAttempts: 0,
+      requeueDelay: 90,
+      nsqdTCPAddresses: [`nsqd-inDocker:4150`],
+      lookupdHTTPAddresses: ['nsqlookupd:4161'], // HTTP default: '127.0.0.1:4161'
+      messageTimeout: 3 * 60 * 1000 // 3 mins
     }
   }
 
