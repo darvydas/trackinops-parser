@@ -50,7 +50,7 @@ cd /usr/src/app/trackinops-parser
 # RUN mkdir -p /usr/src/app/trackinops-parser
 
 # Copy configuration file from local source
-COPY ./configuration.js /usr/src/app/trackinops-crawler/configuration.js
+COPY ./configuration.js /usr/src/app/trackinops-parser/configuration.js
 
 # Set up Working Directory
 WORKDIR /usr/src/app/trackinops-parser

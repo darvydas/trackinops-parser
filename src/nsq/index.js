@@ -99,7 +99,7 @@ const startParserSubscriptions = function () {
   //     },
   NSQreader.on('message',
     function (msg) {
-      console.info("Received:", msg.json().url, "routingKey:", msg.fields.routingKey);
+      console.info("Received:", msg.json().url);
       // // if (job.id % 10 == 0) { // changes Tor IP if it's 10th consecutive job starting
       // //   tr.renewTorSession(function (err, res) {
       // //     if (err) console.error(err);
