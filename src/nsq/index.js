@@ -200,7 +200,7 @@ const startParserSubscriptions = function () {
               const elementIsOnThePage = (selector) => {
                 return new Promise((resolve, reject) => {
                   // Evaluate outerHTML.
-                  Runtime.evaluate({ expression: `document.documentElement.querySelector("${selector}")` })
+                  Runtime.evaluate({ expression: `document.documentElement.querySelector("${selector}").innerHTML` })
                     .then((result) => {
                       console.info(`document.documentElement.querySelector("${selector}")`, result);
                       if (result && result.result && result.result.value) resolve(true);
@@ -374,6 +374,7 @@ const startParserSubscriptions = function () {
                             // regex matches URL and waitForSelector found on the page
                             return elementIsOnThePage(cMatch.waitForSelector)
                               .then((existOnPagee) => {
+                                console.info('elementIsOnThePage', existOnPagee, existOnPagee ? cMatch : false);
                                 return existOnPagee ? cMatch : false
                               });
 
