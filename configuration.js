@@ -1,9 +1,6 @@
 const development = {
   NODE_ENV: process.env.NODE_ENV,
   NODE_LOG_LEVEL: process.env.NODE_LOG_LEVEL,
-  web: {
-    port: process.env.WEB_PORT || 3000
-  },
   mongodb: {
     host: "localhost",
     port: 27017,
@@ -12,94 +9,48 @@ const development = {
     // username: "",
     // password: "",
     options: {
-      useMongoClient: true,
-      // server: { socketOptions: { keepAlive: 300000, connectTimeoutMS: 30000 } },
-      // replset: {
-      //   ha: true, // Make sure the high availability checks are on,
-      //   haInterval: 5000, // Run every 5 seconds
-      //   socketOptions: { keepAlive: 300000, connectTimeoutMS: 30000, socketTimeoutMS: 90000 }
-      // },
-      // config: { autoIndex: false } // calls ensureIndex on every index in a DB, slower restart, more reliable indexes
+      useMongoClient: true
     }
   },
-  rabbit: {
-    connection: {
-      name: 'trackinopsConnection',
-      username: "trackinops",
-      password: "trops", //"trackinops",
-      server: ["127.0.0.1"], //"rabbitmq", //["rabbitmq"],,
-      port: 5672,
-      VHost: "%2ftrackinops",
-      timeout: 1000,
-      failAfter: 30,
-      retryLimit: 400
-    },
-    prefetchLimit: 4,
-    requePrefetchLimit: 2
-  },
-  levelup: {
-    location: './DB/levelDB',
-    options: {
-      createIfMissing: true,
-      errorIfExists: false,
-      compression: true,
-      cacheSize: 100 * 8 * 1024 * 1024,
-      keyEncoding: 'utf8',
-      valueEncoding: 'json'
+  nsq: {
+    server: 'nsqd',
+    wPort: 4150, // TCP nsqd Write Port, default: 4150
+    rPort: 4161, // HTTP nsqlookupd Read Port, default: 4161
+    nsqdTCPAddresses: [`nsqd:4150`],
+    lookupdHTTPAddresses: ['nsqlookupd:4161'],
+    readerOptions: {
+      maxInFlight: 1,
+      maxBackoffDuration: 128,
+      maxAttempts: 0,
+      requeueDelay: 90,
+      nsqdTCPAddresses: [`nsqd:4150`],
+      lookupdHTTPAddresses: ['nsqlookupd:4161'], // HTTP default: '127.0.0.1:4161'
+      messageTimeout: 3 * 60 * 1000 // 3 mins
     }
   }
 };
 const production = {
-  web: {
-    port: process.env.WEB_PORT || 3000
-  },
   mongodb: {
     host: "mongod",
     port: 27017,
     db: "trackinops",
-    uri: "mongodb://mongod:27017/trackinops",
+    uri: "mongodb://mongod:27017/trackinops?authSource=admin",
     options: {
       useMongoClient: true
     }
   },
-  rabbit: {
-    connection: {
-      name: 'trackinopsConnection',
-      username: "trackinops",
-      password: "trops",
-      server: "rabbitmq",
-      port: 5672,
-      VHost: "%2ftrackinops",
-      timeout: 1000,
-      failAfter: 30,
-      retryLimit: 400
-    },
-    prefetchLimit: 4,
-    requePrefetchLimit: 30
-  },
-  levelup: {
-    location: '/usr/src/app/trackinops-parser/DB/levelDB',
-    options: {
-      createIfMissing: true,
-      errorIfExists: false,
-      compression: true,
-      cacheSize: 8 * 1024 * 1024 * 1024,
-      keyEncoding: 'utf8',
-      valueEncoding: 'json'
-    }
-  },
   nsq: {
-    server: 'nsqd-inDocker',
+    server: 'nsqd',
     wPort: 4150, // TCP nsqd Write Port, default: 4150
     rPort: 4161, // HTTP nsqlookupd Read Port, default: 4161
-    nsqdTCPAddresses: [`nsqd-inDocker:4150`],
+    nsqdTCPAddresses: [`nsqd:4150`],
     lookupdHTTPAddresses: ['nsqlookupd:4161'],
     readerOptions: {
       maxInFlight: 5,
       maxBackoffDuration: 128,
       maxAttempts: 0,
       requeueDelay: 90,
-      nsqdTCPAddresses: [`nsqd-inDocker:4150`],
+      nsqdTCPAddresses: [`nsqd:4150`],
       lookupdHTTPAddresses: ['nsqlookupd:4161'], // HTTP default: '127.0.0.1:4161'
       messageTimeout: 3 * 60 * 1000 // 3 mins
     }

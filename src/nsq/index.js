@@ -4,13 +4,13 @@ const config = require('../../configuration.js')(process.env.NODE_ENV);
 // start MongoDB with Mongoose
 const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird'); // Use bluebird promises
-const crawlerModel = require('../models/crawlerModel');
+// const crawlerModel = require('../models/crawlerModel');
 // const executionModel = require('../models/executionModel');
 const requestModel = require('../models/requestModel');
 mongoose.connect(config.mongodb.uri, config.mongodb.options);
 
 const nsq = require('nsqjs');
-const NSQreader = new nsq.Reader('trackinops.crawler-parser', 'Execute_parse', config.nsq.readerOptions);
+const NSQreader = new nsq.Reader(process.env.readTopic || 'trackinops.parser-request', 'Execute_request', config.nsq.readerOptions);
 NSQreader.connect();
 NSQreader.on('ready', function () {
   console.info(`NSQ Reader ready on nsqlookupd:${config.nsq.lookupdHTTPAddresses} or ${nsqdTCPAddresses}`);
