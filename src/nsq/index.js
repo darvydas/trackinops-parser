@@ -2,14 +2,23 @@
 const config = require('../../configuration.js')(process.env.NODE_ENV);
 
 // start MongoDB with Mongoose
-const mongoose = require('mongoose');
-mongoose.Promise = require('bluebird'); // Use bluebird promises
+// const mongoose = require('mongoose');
+// mongoose.Promise = require('bluebird'); // Use bluebird promises
 // const crawlerModel = require('../models/crawlerModel');
 // const executionModel = require('../models/executionModel');
-const requestModel = require('../models/requestModel');
-mongoose.connect(config.mongodb.uri, config.mongodb.options);
+// const requestModel = require('../models/requestModel');
+// mongoose.connect(config.mongodb.uri, config.mongodb.options);
 
 const nsq = require('nsqjs');
+const NSQwriter = new nsq.Writer(config.nsq.server, config.nsq.wPort);
+NSQwriter.connect();
+NSQwriter.on('ready', function () {
+  console.info(`NSQ Writer ready on ${config.nsq.server}:${config.nsq.wPort}`);
+});
+NSQwriter.on('closed', function () {
+  console.info('NSQ Writer closed Event');
+});
+
 const NSQreader = new nsq.Reader(process.env.readTopic || 'trackinops.parser-request', 'Execute_request', config.nsq.readerOptions);
 NSQreader.connect();
 NSQreader.on('ready', function () {
@@ -20,22 +29,8 @@ NSQreader.on('error', function (err) {
   console.error(`NSQ Reader error Event`);
   console.error(new Error(err));
 
-  // TODO: should save an error to mongoDB, but needs msg informaction  
-  // // saving failed any failed request to MongoDB
-  // return requestModel.upsertAfterError(
-  //   {
-  //     // Mongoose creating object to DB
-  //     errorInfo: err,
+  // TODO: should save an error to mongoDB, but there's no message information  
 
-  //     requestedAt: msg.body.timestamp,
-  //     uniqueUrl: msg.body.uniqueUrl,
-  //     url: msg.body.url,
-  //     executionId: msg.body.executionDoc._id
-  //   }).then(function (upsertResponse) {
-  //     console.error('Crawling failed error saved to Requests Collection', upsertResponse);
-  //   }).catch(function (lastError) {
-  //     console.error('lastError', lastError);
-  //   });
 });
 NSQreader.on('closed', function () {
   console.info('NSQ Reader closed Event');
@@ -57,8 +52,9 @@ const dnscache = require('dnscache')({
 
 process.on('SIGINT', function () {
   console.info("\nStarting shutting down from SIGINT (Ctrl-C)");
-  // closing NSQreader connections
+  // closing NSQwriter and NSQreader connections
   NSQreader.close();
+  NSQwriter.close();
 
   // Closing all Chromium Tabs
   CDP.List(function (err, targets) {
@@ -87,6 +83,22 @@ process.on('SIGINT', function () {
   });
   // process.exit(0);
 })
+
+const publishToMongodb = function (method, data) {
+  return new Promise(function (resolve, reject) {
+    NSQwriter.publish(`trackinops.results.toMongoDB`, {
+      method: method,
+      data: data
+    }, function (err) {
+      if (err) {
+        console.error(`NSQwriter Mongo Save publish Error: ${err.message}`);
+        return reject(err);
+      }
+      console.info(`Mongo Save sent to NSQ, 150 chars: ${data.uniqueUrl.substring(0, 150)}`);
+      return resolve();
+    })
+  })
+}
 
 const startParserSubscriptions = function () {
   // return crawlerModel.find().then(function (MongoCrawlerDocs) {
@@ -338,6 +350,7 @@ const startParserSubscriptions = function () {
                       // .then((followLinks) => {
                       //   extractedResults.followingLinks = followLinks;
 
+
                       return Promise.all(msg.json().executionDoc.crawlMatches.map(function (cMatch) {
                         let regexMatch = false;
 
@@ -350,10 +363,10 @@ const startParserSubscriptions = function () {
                             // removes trailing slash
                             matchStr = matchStr.substring(0, matchStr.length - 1);
                           }
-                          let patt = new RegExp('^' + matchStr + '$');
                           if (_.endsWith(extractedResults.loadedUrl, '/')) {
                             extractedResults.loadedUrl = extractedResults.loadedUrl.substring(0, extractedResults.loadedUrl.length - 1);
                           }
+                          let patt = new RegExp('^' + matchStr + '$');
                           regexMatch = patt.test(extractedResults.loadedUrl);
                         }
                         if (regexMatch) return cMatch;
@@ -411,8 +424,9 @@ const startParserSubscriptions = function () {
                       if (err)
                         console.error(err); // JSON.stringify(error))); // done(new Error(JSON.stringify(error)));
 
-                      // saving failed any failed request to MongoDB
-                      return requestModel.upsertAfterError(
+                      return publishToMongodb('requestModel.upsertAfterError',
+                        // // saving failed any failed request to MongoDB
+                        // return requestModel.upsertAfterError(
                         {
                           // Mongoose creating object to DB
                           errorInfo: err,
@@ -421,7 +435,8 @@ const startParserSubscriptions = function () {
                           uniqueUrl: msg.json().uniqueUrl,
                           url: msg.json().url,
                           executionId: msg.json().executionDoc._id
-                        }).finally(() => {
+                        })
+                        .finally(() => {
                           console.error('Crawling failed error saved to Requests Collection', upsertResponse);
 
                           msg.finish(); // finishes the job and saves error
@@ -486,7 +501,8 @@ function queueProcessParserAndMongoSave(requestMessageBody, result) {
     return pageParser(result).then(function (parserResult) {
       let insertParserResult = parserResult || {};
 
-      return requestModel.upsertAfterParser(
+      // return requestModel.upsertAfterParser(
+      return publishToMongodb('requestModel.upsertAfterParser',
         {
           // Mongoose updating object to DB
           executionId: requestMessageBody.executionDoc._id,
@@ -512,14 +528,14 @@ function queueProcessParserAndMongoSave(requestMessageBody, result) {
           referrer: result.referrer,
           downloadedBytes: result.downloadedBytes,
           html: {
-            toLength: result.htmlLength,
-            toString: result.html
+            toLength: result.htmlLength //,
+            // toString: result.html
             // allLinks: result.allLinks,
             // followingLinks: result.followingLinks
           }
         }).then(function (request) {
-          if (!request) reject(new Error(`requestModel.upsertAfterParser conditions have not been met. executionId: ${requestMessageBody.executionDoc._id},  uniqueUrl: ${requestMessageBody.uniqueUrl}`));
-          console.info('completed job saved to DB, requestId = ', request._id);
+          // if (!request) reject(new Error(`requestModel.upsertAfterParser conditions have not been met. executionId: ${requestMessageBody.executionDoc._id},  uniqueUrl: ${requestMessageBody.uniqueUrl}`));
+          // console.info('completed job saved to DB, requestId = ', request._id);
           return resolve();
         }, function (err) {
           console.error(new Error('job completed - mongo save - error on request ' + err));
