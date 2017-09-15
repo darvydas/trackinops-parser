@@ -305,7 +305,7 @@ const startParserSubscriptions = function () {
                   // Network and Security domain settings
                   return Promise.all([
                     Security.setOverrideCertificateErrors({ override: true }),
-                    Network.setUserAgentOverride({ userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }),
+                    // Network.setUserAgentOverride({ userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }),
                     Network.setBlockedURLs({ urls: msg.json().executionDoc.requestBlockList }),
                     // Network.enableRequestInterception({ enabled: true }),
                     Network.setCacheDisabled({ cacheDisabled: true })
