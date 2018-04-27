@@ -1,17 +1,6 @@
 const development = {
   NODE_ENV: process.env.NODE_ENV,
   NODE_LOG_LEVEL: process.env.NODE_LOG_LEVEL,
-  mongodb: {
-    host: "localhost",
-    port: 27017,
-    db: "trackinops",
-    uri: "mongodb://localhost:27017/trackinops",
-    // username: "",
-    // password: "",
-    options: {
-      useMongoClient: true
-    }
-  },
   nsq: {
     server: 'nsqd',
     wPort: 4150, // TCP nsqd Write Port, default: 4150
@@ -30,15 +19,6 @@ const development = {
   }
 };
 const production = {
-  mongodb: {
-    host: "mongod",
-    port: 27017,
-    db: "trackinops",
-    uri: "mongodb://mongod:27017/trackinops?authSource=admin",
-    options: {
-      useMongoClient: true
-    }
-  },
   nsq: {
     server: 'nsqd',
     wPort: 4150, // TCP nsqd Write Port, default: 4150
