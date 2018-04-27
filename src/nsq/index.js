@@ -306,7 +306,7 @@ const startParserSubscriptions = function () {
                   return Promise.all([
                     Security.setOverrideCertificateErrors({ override: true }),
                     // Network.setUserAgentOverride({ userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" }),
-                    Network.setBlockedURLs({ urls: msg.json().executionDoc.requestBlockList }),
+                    Network.setBlockedURLs({ urls: msg.json().website.parserSettings.requestBlockList }),
                     // Network.enableRequestInterception({ enabled: true }),
                     Network.setCacheDisabled({ cacheDisabled: true })
                   ])
@@ -351,14 +351,14 @@ const startParserSubscriptions = function () {
                       //   extractedResults.followingLinks = followLinks;
 
 
-                      return Promise.all(msg.json().executionDoc.crawlMatches.map(function (cMatch) {
+                      return Promise.all(msg.json().website.parserSettings.parserMatches.map(function (pMatch) {
                         let regexMatch = false;
 
-                        if (!cMatch.urlRegEx) return cMatch;
+                        if (!pMatch.urlRegEx) return pMatch;
 
-                        if (cMatch.urlRegEx !== null && cMatch.urlRegEx.length > 0) {
+                        if (pMatch.urlRegEx !== null && pMatch.urlRegEx.length > 0) {
                           // replaces [] to ()
-                          let matchStr = cMatch.urlRegEx.replace(/\[/g, '(').replace(/\]/g, ')');
+                          let matchStr = pMatch.urlRegEx.replace(/\[/g, '(').replace(/\]/g, ')');
                           if (_.endsWith(matchStr, '/')) {
                             // removes trailing slash
                             matchStr = matchStr.substring(0, matchStr.length - 1);
@@ -369,41 +369,41 @@ const startParserSubscriptions = function () {
                           let patt = new RegExp('^' + matchStr + '$');
                           regexMatch = patt.test(extractedResults.loadedUrl);
                         }
-                        if (regexMatch) return cMatch;
+                        if (regexMatch) return pMatch;
 
                       }))
-                        .then(function (crawlMatchesAfterRegexCheck) {
+                        .then(function (parserMatchesAfterRegexCheck) {
                           // evaluate elements on the page
-                          const regexMatched = _.compact(crawlMatchesAfterRegexCheck);
+                          const regexMatched = _.compact(parserMatchesAfterRegexCheck);
                           console.info(msg.json().url, 'regexMatched', regexMatched);
                           // if regexMatched match is empty just return an empty array
                           if (regexMatched.length === 0) return regexMatched;
 
-                          return Promise.all(regexMatched.map(function (cMatch) {
+                          return Promise.all(regexMatched.map(function (pMatch) {
 
-                            if (!cMatch.waitForSelector) // regex matches URL and waitForSelector is not specified
-                              return cMatch;
+                            if (!pMatch.waitForSelector) // regex matches URL and waitForSelector is not specified
+                              return pMatch;
 
                             // regex matches URL and waitForSelector found on the page
-                            return elementIsOnThePage(cMatch.waitForSelector)
+                            return elementIsOnThePage(pMatch.waitForSelector)
                               .then((existOnPagee) => {
-                                console.info('elementIsOnThePage', existOnPagee, existOnPagee ? cMatch : false);
-                                return existOnPagee ? cMatch : false
+                                console.info('elementIsOnThePage', existOnPagee, existOnPagee ? pMatch : false);
+                                return existOnPagee ? pMatch : false
                               });
 
-                          })).then(function (crawlMatchesAfterRegexCheck) {
+                          })).then(function (parserMatchesAfterRegexCheck) {
                             // return full array of crawlMatches
                             // if nothing matched for all waitForSelector's, still return empty
-                            let crawlMatchesFounded = _.compact(crawlMatchesAfterRegexCheck);
-                            console.log(msg.json().url, 'crawlMatchesFounded', crawlMatchesFounded);
-                            return crawlMatchesFounded;
+                            let parserMatchesFounded = _.compact(parserMatchesAfterRegexCheck);
+                            console.log(msg.json().url, 'parserMatchesFounded', parserMatchesFounded);
+                            return parserMatchesFounded;
 
                           });
 
                         });
                     })
-                    .then(function (crawlMatches) {
-                      return extractedResults.crawlMatches = crawlMatches;
+                    .then(function (parserMatches) {
+                      return extractedResults.crawlMatches = parserMatches;
                     })
                     .then(function () {
                       return queueProcessParserAndMongoSave(msg.json(), extractedResults);
@@ -505,7 +505,8 @@ function queueProcessParserAndMongoSave(requestMessageBody, result) {
       return publishToMongodb('requestModel.upsertAfterParser',
         {
           // Mongoose updating object to DB
-          executionId: requestMessageBody.executionDoc._id,
+          requestId:requestMessageBody.requestId,
+          website: requestMessageBody.website._id,
           url: requestMessageBody.url,
           uniqueUrl: requestMessageBody.uniqueUrl,
           loadedUrl: result.loadedUrl,
@@ -520,7 +521,6 @@ function queueProcessParserAndMongoSave(requestMessageBody, result) {
 
           pageMatched: result.crawlMatches,
 
-          pageMatched: result.crawlMatches,
           parserStartedAt: insertParserResult.parserStartedAt,
           parserFinishedAt: insertParserResult.parserFinishedAt,
           parserResult: insertParserResult.parserResult,
