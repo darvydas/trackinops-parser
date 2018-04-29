@@ -555,29 +555,29 @@ function pageParser(result) {
 
     // iterates over all the crawlMatches and returns array matched results
     return Promise.map(result.crawlMatches, function (resultCMatch, index, length) {
-      if (_.isEmpty(resultCMatch.parser)) return resolve(); // no data from the page is needed
-      // iterates over each key in resultCMatch.parser and returns an array of single resultCMatch
-      return Promise.map(_.keys(resultCMatch.parser), function (selectorName) {
+      if (_.isEmpty(resultCMatch.data)) return resolve(); // no data from the page is needed
+      // iterates over each key in resultCMatch.data and returns an array of single resultCMatch
+      return Promise.map(_.keys(resultCMatch.data), function (selectorName) {
         let singleResult = {};
         switch (selectorName) {
           case 'path':
             singleResult[selectorName] = '>>';
-            singleResult[selectorName] += $(resultCMatch.parser[selectorName]).map(function (i, el) {
+            singleResult[selectorName] += $(resultCMatch.data[selectorName]).map(function (i, el) {
               // this === el
               return $(this).attr('href');
             }).get().join('>>');
             break;
           case 'image':
-            constructUrl($(resultCMatch.parser[selectorName]).first().attr('src'), result.loadedUrl)
+            constructUrl($(resultCMatch.data[selectorName]).first().attr('src'), result.loadedUrl)
               .then(function (fullUrl) {
                 singleResult[selectorName] = fullUrl;
               });
             break;
           case 'description':
-            singleResult[selectorName] = $(resultCMatch.parser[selectorName]).first().html();
+            singleResult[selectorName] = $(resultCMatch.data[selectorName]).first().html();
             break;
           default: // 'name', 'sku', 'priceCurrent','productId','categoryId','currency' and everything else
-            singleResult[selectorName] = $(resultCMatch.parser[selectorName]).first().text();
+            singleResult[selectorName] = $(resultCMatch.data[selectorName]).first().text();
         }
         return singleResult;
       }).then(function (singleResult) {
